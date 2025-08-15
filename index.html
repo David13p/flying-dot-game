@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-Frame-Options" content="DENY">
+<title>Flying Dot</title>
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+    <div id="scoreDisplay">0</div>
+    <div id="speedDisplay">Speed: 0.0</div>
+    <div id="gameUI">
+        <div id="message">Flappy Dot</div>
+        <div id="finalScore" style="display:none;"></div>
+        <div id="highScoreDisplay" style="display:none;"></div>
+        <button id="startButton" class="game-button">Start Game</button>
+    </div>
+</div>
+
+<div id="mobileMessage">
+    <p>This game is only fun to play using a mouse and keyboard.</p>
+    <p>Please access it from a desktop or laptop computer.</p>
+</div>
+
+<div class="links-container">
+    <a class="link-button github-link" href="https://github.com/your-username/your-repo" target="_blank">
+        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Logo">GitHub Repo
+    </a>
+    <a class="link-button donate-button" href="https://your-donation-link.com" target="_blank">
+        💖 Support This Project
+    </a>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const gameUI = document.getElementById('gameUI');
+const messageDisplay = document.getElementById('message');
+const finalScoreDisplay = document.getElementById('finalScore');
+const highScoreDisplay = document.getElementById('highScoreDisplay');
+const startButton = document.getElementById('startButton');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const speedDisplay = document.getElementById('speedDisplay');
+const mobileMessage = document.getElementById('mobileMessage');
+const gameContainer = document.getElementById('gameContainer');
+
+const DOT_RADIUS = 15;
+const OBSTACLE_WIDTH = 60;
+const OBSTACLE_SPACING = 200;
+const BASE_MIN_GAP_HEIGHT = 100;
+const BASE_MAX_GAP_HEIGHT = 180;
+const MAX_GAP_MIN_HEIGHT = 150;
+const MAX_GAP_MAX_HEIGHT = 250;
+const INITIAL_GAME_SPEED = 7.5;
+const MAX_GAME_SPEED = 9;
+const SPEED_INCREASE_RATE = 0.0002;
+
+let dot = { x: canvas.width/2, y: canvas.height/2, radius: DOT_RADIUS };
+let obstacles = [];
+let score = 0;
+let highScore = localStorage.getItem('flappyDotHighScore') || 0;
+let gameSpeed = INITIAL_GAME_SPEED;
+let gameOver = true;
+let gameStarted = false;
+let animationFrameId;
+let dotTrail = [];
+const MAX_TRAIL_LENGTH = 100;
+let currentScrollOffset = 0;
+let effectiveMinGapHeight = BASE_MIN_GAP_HEIGHT;
+let effectiveMaxGapHeight = BASE_MAX_GAP_HEIGHT;
+const pointSound = new Audio('point.mp3');
+
+function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    if (!gameStarted || gameOver) {
+        dot.x = canvas.width/2;
+        dot.y = canvas.height/2;
+    }
+    if (!gameOver) draw();
+}
+
+function checkDeviceAndDisplay() {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+        mobileMessage.style.display = 'flex';
+        gameContainer.style.display = 'none';
+    } else {
+        mobileMessage.style.display = 'none';
+        gameContainer.style.display = 'flex';
+        resizeCanvas();
+    }
+}
+
+window.onload = function() {
+    checkDeviceAndDisplay();
+    showUI("Flappy Dot", "Start Game", false, true);
+    speedDisplay.textContent = `Speed: ${INITIAL_GAME_SPEED.toFixed(1)}`;
+};
+window.addEventListener('resize', checkDeviceAndDisplay);
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!gameOver && gameStarted) {
+        const rect = canvas.getBoundingClientRect();
+        dot.x = Math.max(dot.radius, Math.min(canvas.width-dot.radius, e.clientX - rect.left));
+        dot.y = Math.max(dot.radius, Math.min(canvas.height-dot.radius, e.clientY - rect.top));
+    }
+});
+
+function drawDot() {
+    ctx.beginPath();
+    ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI*2);
+    ctx.fillStyle = '#e74c3c';
+    ctx.shadowColor = '#e74c3c';
+    ctx.shadowBlur = 15;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+}
+
+function drawObstacles() {
+    ctx.fillStyle = '#27ae60';
+    obstacles.forEach(ob => {
+        ctx.fillRect(ob.x, 0, OBSTACLE_WIDTH, ob.topHeight);
+        ctx.fillRect(ob.x, canvas.height-ob.bottomHeight, OBSTACLE_WIDTH, ob.bottomHeight);
+    });
+}
+
+function updateObstacles() {
+    obstacles.forEach(ob => { ob.x -= gameSpeed; });
+    obstacles = obstacles.filter(ob => ob.x + OBSTACLE_WIDTH > 0);
+    if (obstacles.length === 0 || (obstacles[obstacles.length-1].x < canvas.width - OBSTACLE_SPACING)) {
+        const gapHeight = Math.random() * (effectiveMaxGapHeight - effectiveMinGapHeight) + effectiveMinGapHeight;
+        const topHeight = Math.random() * (canvas.height - gapHeight);
+        const bottomHeight = canvas.height - topHeight - gapHeight;
+        obstacles.push({ x: canvas.width, topHeight, bottomHeight });
+    }
+}
+
+function drawTrail() {
+    for (let i = 0; i < dotTrail.length; i++) {
+        const pos = dotTrail[i];
+        const alpha = i / dotTrail.length;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, dot.radius * alpha, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(231, 76, 60, ${alpha * 0.5})`;
+        ctx.fill();
+    }
+}
+
+function updateTrail() {
+    dotTrail.push({ x: dot.x, y: dot.y });
+    if (dotTrail.length > MAX_TRAIL_LENGTH) dotTrail.shift();
+}
+
+function checkCollision() {
+    for (const ob of obstacles) {
+        if (dot.x + dot.radius > ob.x && dot.x - dot.radius < ob.x + OBSTACLE_WIDTH) {
+            if (dot.y - dot.radius < ob.topHeight || dot.y + dot.radius > canvas.height - ob.bottomHeight) {
+                endGame();
+                return;
+            }
+        }
+    }
+}
+
+function updateScore() {
+    obstacles.forEach(ob => {
+        if (!ob.passed && ob.x + OBSTACLE_WIDTH < dot.x) {
+            ob.passed = true;
+            score++;
+            scoreDisplay.textContent = score;
+            pointSound.currentTime = 0;
+            pointSound.play();
+            const speedIncrease = Math.random() * 0.07;
+            gameSpeed = Math.min(MAX_GAME_SPEED, gameSpeed + speedIncrease);
+            if (score % 25 === 0) {
+                effectiveMinGapHeight = Math.min(MAX_GAP_MIN_HEIGHT, effectiveMinGapHeight + 5);
+                effectiveMaxGapHeight = Math.min(MAX_GAP_MAX_HEIGHT, effectiveMaxGapHeight + 5);
+            }
+            speedDisplay.textContent = `Speed: ${gameSpeed.toFixed(1)}`;
+        }
+    });
+}
+
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawTrail();
+    drawDot();
+    drawObstacles();
+}
+
+function gameLoop() {
+    if (!gameOver) {
+        updateObstacles();
+        updateTrail();
+        checkCollision();
+        updateScore();
+        draw();
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+}
+
+function startGame() {
+    gameOver = false;
+    gameStarted = true;
+    score = 0;
+    obstacles = [];
+    dotTrail = [];
+    dot.x = canvas.width/2;
+    dot.y = canvas.height/2;
+    gameSpeed = INITIAL_GAME_SPEED;
+    effectiveMinGapHeight = BASE_MIN_GAP_HEIGHT;
+    effectiveMaxGapHeight = BASE_MAX_GAP_HEIGHT;
+    scoreDisplay.textContent = score;
+    speedDisplay.textContent = `Speed: ${gameSpeed.toFixed(1)}`;
+    gameUI.classList.add('hidden');
+    gameLoop();
+}
+
+function endGame() {
+    gameOver = true;
+    cancelAnimationFrame(animationFrameId);
+    finalScoreDisplay.textContent = `Your Score: ${score}`;
+    finalScoreDisplay.style.display = 'block';
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('flappyDotHighScore', highScore);
+    }
+    highScoreDisplay.textContent = `High Score: ${highScore}`;
+    highScoreDisplay.style.display = 'block';
+    showUI('Game Over', 'Restart Game');
+}
+
+function showUI(msg, btnText, showFinalScore=false, hideHighScore=false) {
+    messageDisplay.textContent = msg;
+    startButton.textContent = btnText;
+    finalScoreDisplay.style.display = showFinalScore ? 'block' : 'none';
+    highScoreDisplay.style.display = hideHighScore ? 'none' : 'block';
+    gameUI.classList.remove('hidden');
+}
+
+startButton.addEventListener('click', startGame);
+</script>
+</body>
+</html>
