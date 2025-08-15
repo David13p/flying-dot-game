@@ -187,25 +187,6 @@
     background-color: #3b4045;
     transform: translateY(-2px);
 }
-
-.donate-button {
-    background-color: #ff9800;
-    color: #fff;
-}
-
-.donate-button:hover {
-    background-color: #e68900;
-    transform: translateY(-2px);
-}
-
-        #leftAd {
-            left: 10px;
-        }
-
-        #rightAd {
-            right: 10px;
-        }
-
         @media (max-width: 1150px) {
             .ad-placeholder {
                 display: none;
@@ -225,3 +206,4 @@
                 display: none;
             }
         }
+
