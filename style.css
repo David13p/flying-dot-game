@@ -154,17 +154,17 @@
             margin-bottom: 20px;
         }
         .links-container {
-    margin-top: 30px;
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
 
-.link-button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+        .link-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
     font-size: 1.1em;
     padding: 10px 20px;
     border-radius: 8px;
@@ -197,25 +197,18 @@
     background-color: #e68900;
     transform: translateY(-2px);
 }
-        @media (max-width: 1150px) {
-            .ad-placeholder {
-                display: none;
-            }
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 0;
-            }
-            #gameContainer {
-                width: 100vw;
-                height: 100vh;
-                max-height: unset;
-                max-width: unset;
-                border-radius: 0;
-                display: none;
-            }
-        }
-
+@media (max-width: 768px) {
+body {
+    padding: 0;
+}
+#gameContainer {
+    width: 100vw;
+    height: 100vh;
+    max-height: unset;
+    max-width: unset;
+    border-radius: 0;
+    display: none;
+    }
+}
 
 
