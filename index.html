@@ -115,50 +115,62 @@
             }
         });
 
-        function drawDot() {
-            ctx.beginPath();
-            ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
-            ctx.fillStyle = '#e74c3c';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 3;
-            ctx.shadowOffsetY = 3;
-            ctx.fill();
-            ctx.closePath();
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-        }
+// ===== Optimized Dot Trail =====
+function drawDotTrail() {
+    if (dotTrail.length < 2) return;
+    
+    ctx.save();
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-        function drawDotTrail() {
-            if (dotTrail.length < 2) return;
-            ctx.beginPath();
-            ctx.moveTo(dotTrail[0].x, dotTrail[0].y);
-            for (let i = 1; i < dotTrail.length; i++) ctx.lineTo(dotTrail[i].x, dotTrail[i].y);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.lineWidth = 5;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.stroke();
-            ctx.closePath();
-        }
+    for (let i = 1; i < dotTrail.length; i++) {
+        const prev = dotTrail[i - 1];
+        const curr = dotTrail[i];
 
-        function drawObstacle(x, y, width, height) {
-            ctx.fillStyle = '#27ae60';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 3;
-            ctx.shadowOffsetY = 3;
-            ctx.fillRect(x, y, width, height);
-            ctx.strokeStyle = '#2ecc71';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x, y, width, height);
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-        }
+        // Fade older trail points
+        const alpha = i / dotTrail.length * 0.5; 
+        ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+
+        ctx.beginPath();
+        ctx.moveTo(prev.x, prev.y);
+        ctx.lineTo(curr.x, curr.y);
+        ctx.stroke();
+        ctx.closePath();
+    }
+    ctx.restore();
+}
+        
+function drawDot() {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'; 
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+
+    ctx.beginPath();
+    ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fill();
+    ctx.closePath();
+    ctx.restore();
+}
+
+function drawObstacle(x, y, width, height) {
+    ctx.save();
+    ctx.fillStyle = '#27ae60';
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeStyle = '#2ecc71';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, width, height);
+    ctx.restore(); 
+}
+
 
         function generateObstacle() {
             const gapHeight = effectiveMinGapHeight + Math.random() * (effectiveMaxGapHeight - effectiveMinGapHeight);
@@ -294,6 +306,7 @@
     </script>
 </body>
 </html>
+
 
 
 
