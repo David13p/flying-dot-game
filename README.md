@@ -1,7 +1,7 @@
 A simple fun game made in html5 to test your reflexes in flappy bird like levels.
 
 
-**Website:** david13p.github.io/flying-dot-game/ 
+**Website:** https://www.david13p.github.io/flying-dot-game/ 
 
 
 **Firefox Add-on:** https://addons.mozilla.org/en-US/firefox/addon/flying-dot-game/
